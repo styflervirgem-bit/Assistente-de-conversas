@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Assistente de Conversas</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f5f5f5;
+      padding: 30px;
+    }
+    .container {
+      max-width: 600px;
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      margin: auto;
+    }
+    button {
+      padding: 10px 20px;
+      background: #4CAF50;
+      color: white;
+      border: none;
+      cursor: pointer;
+      margin-top: 10px;
+    }
+    .resultado {
+      margin-top: 20px;
+      white-space: pre-line;
+      background: #f0f0f0;
+      padding: 10px;
+      border-radius: 5px;
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <h2>📸 Assistente de Conversas</h2>
+
+  <input type="file" id="imagem" accept="image/*"><br><br>
+
+  <button onclick="analisar()">Analisar Conversa</button>
+
+  <div class="resultado" id="resultado"></div>
+</div>
+
+<script>
+async function analisar() {
+  const fileInput = document.getElementById('imagem');
+  const resultado = document.getElementById('resultado');
+
+  if (!fileInput.files[0]) {
+    alert("Envie um print da conversa");
+    return;
+  }
+
+  resultado.innerText = "🔍 Lendo imagem...";
+
+  // OCR
+  const formData = new FormData();
+  formData.append("file", fileInput.files[0]);
+  formData.append("apikey", "SUA_CHAVE_OCR_SPACE");
+  formData.append("language", "por");
+
+  const ocrResponse = await fetch("https://api.ocr.space/parse/image", {
+    method: "POST",
+    body: formData
+  });
+
+  const ocrData = await ocrResponse.json();
+  const textoExtraido = ocrData.ParsedResults[0].ParsedText;
+
+  resultado.innerText = "🧠 Analisando conversa...";
+
+  // IA
+  const prompt = `
+Você é um assistente de comunicação respeitoso e empático.
+
+Analise a conversa abaixo e gere:
+1. Sentimento
+2. Nível de interesse
+3. Intenção
+4. 3 sugestões de resposta:
+- Leve
+- Divertida
+- Direta
+
+Regras:
+- Linguagem natural brasileira
+- Não seja invasivo
+- Não seja sexual
+
+Conversa:
+"${textoExtraido}"
+`;
+
+  const iaResponse = await fetch("https://api.openai.com/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": "Bearer SUA_CHAVE_OPENAI"
+    },
+    body: JSON.stringify({
+      model: "gpt-4o-mini",
+      messages: [{ role: "user", content: prompt }]
+    })
+  });
+
+  const iaData = await iaResponse.json();
+  resultado.innerText = iaData.choices[0].message.content;
+}
+</script>
+
+</body>
+</html>
